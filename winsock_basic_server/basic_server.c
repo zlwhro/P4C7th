@@ -2,12 +2,15 @@
 #include <ws2tcpip.h>
 #include <stdio.h>
 #include <process.h>
+#include "httpServer.h"
 
 
 #pragma comment(lib, "Ws2_32.lib") //라이브러리 파일 Ws2_32.lib에 연결되는지 확인한다.
 #define DEFAULT_PORT "4444"
 #define DEFAULT_BUFLEN 4096
 #define MAX_THREADS 10
+
+
 
 // 스레드가 사용할 구조체
 // 소켓, 클라이언트 주소, 데이터 송수신에 사용할 버퍼
@@ -28,58 +31,7 @@ ThreadArgs tArgs[MAX_THREADS];
 
 
 //클라언트의 요청 처리
-void requestHandler(int index)
-{
-	int iSendResult;
-	
-	int iResult;
-	SOCKET ClientSocket = tArgs[index].ClientSocket;
-	char remoteAddr[20];
-	char* recvbuf = tArgs[index].recvbuf;
-	int recvbuflen = DEFAULT_BUFLEN;
-
-	//클라이언트 IP주소 확인
-	inet_ntop(AF_INET, &tArgs[index].clientAddr.sin_addr, remoteAddr, sizeof(remoteAddr));
-	printf("accept Client %s threadNum %d\n", remoteAddr, index);
-
-
-	do {
-		// 데이터 수신
-		iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
-		if (iResult > 0) {
-			printf("Bytes recevied: %d\n", iResult);
-			iSendResult = send(ClientSocket, recvbuf, iResult, 0);
-			if (iSendResult == SOCKET_ERROR) {
-				printf("send failed: %d\n", WSAGetLastError());
-				closesocket(ClientSocket);
-				return 1;
-			}
-			printf("Bytes sent: %d\n", iSendResult);
-		}
-		//클라이언트 쪽에서 연결 종료
-		else if (iResult == 0)
-			printf("Connection closing...\n");
-		else {
-			printf("recv failed %d\n", WSAGetLastError());
-		}
-
-	} while (iResult > 0);
-
-	//shutdown socket 소켓은 데이터 수신만 가능하고 송신을 불가능한 상태가 된다.
-	iResult = shutdown(ClientSocket, SD_SEND);
-	if (iResult == SOCKET_ERROR) {
-		printf("shutdown failed: %d\n", WSAGetLastError());
-		closesocket(ClientSocket);
-		return 1;
-	}
-
-	//소켓 닫기
-	closesocket(ClientSocket);
-
-	//스레드 종료하기
-	isActive[index] = FALSE;
-	_endthread();
-}
+void requestHandler(int index);
 
 int main() {
 	int iResult;
@@ -186,4 +138,56 @@ int main() {
 	WSACleanup();
 	return 0;
 
+}
+
+//클라언트의 요청 처리
+void requestHandler(int index)
+{
+	int iSendResult;
+
+	int iResult;
+	SOCKET ClientSocket = tArgs[index].ClientSocket;
+	char remoteAddr[20];
+	char* recvbuf = tArgs[index].recvbuf;
+	int recvbuflen = DEFAULT_BUFLEN;
+
+	//클라이언트 IP주소 확인
+	inet_ntop(AF_INET, &tArgs[index].clientAddr.sin_addr, remoteAddr, sizeof(remoteAddr));
+	printf("accept Client %s threadNum %d\n", remoteAddr, index);
+
+
+	do {
+		// 데이터 수신
+		iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
+		HTTP_Request req;
+		if (iResult > 0) {
+			if (parseRequest(recvbuf, iResult, &req) != 0)
+				printf("bad request or server error\n");
+			else
+				printRequest(&req);
+			freeRequest(&req);
+		}
+		//클라이언트 쪽에서 연결 종료
+		else if (iResult == 0)
+			printf("Connection closing...\n");
+		else {
+			printf("recv failed %d\n", WSAGetLastError());
+		}
+
+	} while (iResult > 0);
+
+	//shutdown socket 소켓은 데이터 수신만 가능하고 송신을 불가능한 상태가 된다.
+	iResult = shutdown(ClientSocket, SD_SEND);
+	if (iResult == SOCKET_ERROR) {
+		printf("shutdown failed: %d\n", WSAGetLastError());
+		closesocket(ClientSocket);
+		return 1;
+	}
+
+	//소켓 닫기
+	closesocket(ClientSocket);
+
+	//스레드 종료하기
+	isActive[index] = FALSE;
+	_endthread();
 }
