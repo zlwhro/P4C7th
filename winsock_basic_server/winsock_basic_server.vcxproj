@@ -139,7 +139,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="basic_server.c" />
+    <ClCompile Include="winSocket.c" />
     <ClCompile Include="httpServer.c" />
   </ItemGroup>
   <ItemGroup>
