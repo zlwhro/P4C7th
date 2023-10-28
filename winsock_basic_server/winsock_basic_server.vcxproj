@@ -139,11 +139,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="httpApp.c" />
     <ClCompile Include="winSocket.c" />
-    <ClCompile Include="httpServer.c" />
+    <ClCompile Include="httpCore.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="httpServer.h" />
+    <ClInclude Include="httpApp.h" />
+    <ClInclude Include="httpCore.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

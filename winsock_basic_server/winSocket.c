@@ -2,8 +2,9 @@
 #include <ws2tcpip.h>
 #include <stdio.h>
 #include <process.h>
-#include "httpServer.h"
+#include "httpApp.h"
 
+extern char* webroot;
 
 #pragma comment(lib, "Ws2_32.lib") //라이브러리 파일 Ws2_32.lib에 연결되는지 확인한다.
 #define DEFAULT_PORT "4444"
@@ -17,7 +18,6 @@
 typedef struct ThreadArgs {
 	SOCKET ClientSocket;
 	SOCKADDR_IN clientAddr;
-	char recvbuf[DEFAULT_BUFLEN];
 }ThreadArgs;
 
 
@@ -33,10 +33,33 @@ ThreadArgs tArgs[MAX_THREADS];
 //클라언트의 요청 처리
 void requestHandler(int index);
 
-int main() {
+int main(int argc, char* argv[]) {
 	int iResult;
 	WSADATA wsaData;
 	int addrlen = sizeof(struct sockaddr);
+	char* address = NULL;
+	char* port = DEFAULT_PORT;
+
+	if (argc > 2)
+	{
+		int i = 1;
+		while (i < argc-1)
+		{
+			if (strcmp(argv[i], "-i") == 0)
+				address = argv[i + 1];
+			else if (strcmp(argv[i], "-p") == 0)
+				port = argv[i + 1];
+			else if (strcmp(argv[i], "-d") == 0)
+				webroot = argv[i + 1];
+			else
+			{
+				printf("Usage\nserver.exe -i {IP address} -p {port} -d {work Directory}\n");
+				return 1;
+			}
+			i += 2;
+		}
+	}
+
 
 	// Winsock 초기화
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -144,12 +167,10 @@ int main() {
 void requestHandler(int index)
 {
 	int iSendResult;
-
+	char recvbuf[DEFAULT_BUFLEN];
 	int iResult;
 	SOCKET ClientSocket = tArgs[index].ClientSocket;
 	char remoteAddr[20];
-	char* recvbuf = tArgs[index].recvbuf;
-	int recvbuflen = DEFAULT_BUFLEN;
 
 	//클라이언트 IP주소 확인
 	inet_ntop(AF_INET, &tArgs[index].clientAddr.sin_addr, remoteAddr, sizeof(remoteAddr));
@@ -158,13 +179,15 @@ void requestHandler(int index)
 
 	do {
 		// 데이터 수신
-		iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
+		iResult = recv(ClientSocket, recvbuf, sizeof(recvbuf), 0);
 		HTTP_Request req;
 		if (iResult > 0) {
 			if (parseRequest(recvbuf, iResult, &req) != 0)
 				printf("bad request or server error\n");
 			else
-				printRequest(&req);
+			{
+				iResult = sendResponse(&req, ClientSocket);
+			}
 			freeRequest(&req);
 		}
 		//클라이언트 쪽에서 연결 종료

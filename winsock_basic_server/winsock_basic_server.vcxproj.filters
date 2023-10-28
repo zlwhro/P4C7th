@@ -18,12 +18,18 @@
     <ClCompile Include="winSocket.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="httpServer.c">
+    <ClCompile Include="httpCore.c">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="httpApp.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="httpServer.h">
+    <ClInclude Include="httpCore.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="httpApp.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
