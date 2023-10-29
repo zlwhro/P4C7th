@@ -25,7 +25,8 @@ http.zip은 테스트용으로 사용할 리소스 파일입니다.
 리소스 폴더에 다운받은 http.zip 파일을 압축해제한 폴더를 넣어주세요
 
 이제 지정한 주소와 포트로 접속하면 됩니다.
-![image](https://github.com/zlwhro/P4C7th/assets/113174616/a5417357-2ffe-4fa6-a356-40276dbe8814)
+![image](https://github.com/zlwhro/P4C7th/assets/113174616/5ba05631-af2d-48a6-a151-f4e298bb5874)
+
 
 자세한 내용을 블로그를 참조해 주세요
 https://hoonp4c7th.tistory.com/5
