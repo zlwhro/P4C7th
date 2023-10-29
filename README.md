@@ -18,11 +18,15 @@ https://github.com/zlwhro/P4C7th/releases/download/v1.0.0/http.zip
 http.zip은 테스트용으로 사용할 리소스 파일입니다.
 
 서버를 실행합니다.
-![image](https://github.com/zlwhro/P4C7th/assets/113174616/9fd7f80a-8d76-4eb1-a24d-6e39e0f0b755)
+![image](https://github.com/zlwhro/P4C7th/assets/113174616/719559e1-814a-4f43-adc8-1958854636b5)
+
 
 실행파일이름 -i {사용할 IP주소} -p {사용할 포트} -d {리소스 폴더}
-리소스 폴더 다운받은 http.zip 파일을 압축해제한 폴더를 넣어주세요
+리소스 폴더에 다운받은 http.zip 파일을 압축해제한 폴더를 넣어주세요
 
 이제 지정한 주소와 포트로 접속하면 됩니다.
+![image](https://github.com/zlwhro/P4C7th/assets/113174616/a5417357-2ffe-4fa6-a356-40276dbe8814)
 
+자세한 내용을 블로그를 참조해 주세요
+https://hoonp4c7th.tistory.com/5
 
