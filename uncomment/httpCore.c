@@ -13,26 +13,21 @@
 # define strback(buffer) &((buffer)[strlen((buffer))])
 # define lastChr(buffer) (buffer)[strlen((buffer))-1]
 
-// 헤더 항목 읽기
+
 void parse_entitiy(Dict* dict, char* line)
 {
-    char* key = NULL, * value = NULL, * next=NULL;
-
-    // ':' 기준 왼쪽이 key 오른쪽이 value
+    char* key = NULL, * value = NULL, * next = NULL;
     key = strtok_s(line, ":", &next);
-    
-    // \r carrige return 문자는 지운다.
     value = strtok_s(NULL, "\r", &next);
     if (key != NULL && value != NULL)
     {
-        //공백은 무시한다.
         while (*value == ' ')
             value++;
         addDict(dict, key, value);
     }
 }
 
-//NULL은 decode하지 않는다.
+
 void urldecode(char* dest, char* src, int len)
 {
     int i = 0;
@@ -60,8 +55,8 @@ void urldecode(char* dest, char* src, int len)
     dest[size] = '\0';
 }
 
-// '='의 왼쪽은 key 오른 쪽은 value 
-void get_param(Dict *dict, char* arg_str)
+
+void get_param(Dict* dict, char* arg_str)
 {
     char* value = strchr(arg_str, '=');
     if (value == NULL || arg_str == value)
@@ -73,9 +68,8 @@ void get_param(Dict *dict, char* arg_str)
     urldecode(dict->last->value, value, strlen(value));
 }
 
-//get 혹은 post 데이터 읽기
-//post의 경우 application/x-www-form-urlencoded 만 지원한다.
-void parseData(Dict *dict, char* http_args)
+
+void parseData(Dict* dict, char* http_args)
 {
     char* argstr = NULL, * next = NULL;
     argstr = strtok_s(http_args, "&", &next);
@@ -87,7 +81,7 @@ void parseData(Dict *dict, char* http_args)
     }
 }
 
-//쿠키 읽기
+
 void parseCookie(Dict* dict, char* http_args)
 {
     char* cookieStr = NULL, * next = NULL;
@@ -102,7 +96,7 @@ void parseCookie(Dict* dict, char* http_args)
     }
 }
 
-//method, path, parameter, version
+
 int http_mppv(char* line, HTTP_Request* req)
 {
     char* method = NULL;
@@ -114,8 +108,8 @@ int http_mppv(char* line, HTTP_Request* req)
     method = strtok_s(line, " ", &next);
     if (method == NULL)
         return -1;
-    
-    //method 확인
+
+
     if (strcmp(method, "GET") == 0)
         req->method = get;
     else if (strcmp(method, "POST") == 0)
@@ -123,23 +117,23 @@ int http_mppv(char* line, HTTP_Request* req)
     else
         return -1;
 
-    //경로 확인
+
     path = strtok_s(NULL, " ", &next);
     if (path == NULL || path != NULL && path[0] != '/')
         return -1;
 
-    //버전 확인
+
     version = strtok_s(NULL, "\r", &next);
     if (version == NULL)
         return -1;
 
-    if(version != strstr(version,"HTTP/") && strlen(version) != 8)
+    if (version != strstr(version, "HTTP/") && strlen(version) != 8)
         return -1;
 
     if (!isdigit(version[5]) || !isdigit(version[7]))
         return -1;
 
-    // get parameter 읽기
+
     parameters = strchr(path, '?');
     if (parameters != NULL)
     {
@@ -148,7 +142,7 @@ int http_mppv(char* line, HTTP_Request* req)
         parseData(&req->getData, parameters);
     }
 
-    //하위 디렉터리로 진입 방지
+
     if (strstr(path, "..") != NULL)
         return -1;
 
@@ -157,36 +151,33 @@ int http_mppv(char* line, HTTP_Request* req)
     req->ver2 = ctoi(version[7]);
     return 0;
 }
-//클라이언트 요청 읽기
-int parseRequest(char* buffer, int dataLen, HTTP_Request *req)
+
+int parseRequest(char* buffer, int dataLen, HTTP_Request* req)
 {
-    
+
     char* line = NULL;
     char* next_line = NULL;
     memset(req, 0, sizeof(HTTP_Request));
-    //한줄씩 읽기
+
     line = strtok_s(buffer, "\n", &next_line);
 
-    //method, path, urlparameter version 읽기
+
     int iResult = http_mppv(line, req);
     if (iResult == 0)
     {
-        //한줄씩 읽기
         line = strtok_s(NULL, "\n", &next_line);
-        //헤더 정보 읽기
         while (line != NULL && strlen(line) > 1)
         {
             parse_entitiy(&req->entities, line);
             DictData* cookie = findByKey(&req->entities, "Cookie");
             if (cookie != NULL)
                 parseCookie(&req->cookies, cookie->value);
-            
+
             line = strtok_s(NULL, "\n", &next_line);
         }
-        //post data 읽기
+
         if (req->method == post)
         {
-            //Content-length 확인
             int content_len = 0;
             DictData* clen = findByKey(&req->entities, "Content-Length");
             if (clen == NULL)
@@ -197,20 +188,17 @@ int parseRequest(char* buffer, int dataLen, HTTP_Request *req)
             content_len = strtol(clen->value, NULL, 10);
             line = strtok_s(NULL, "\n", &next_line);
 
-            //NULL 바이트 쓰기 지정한 크기보다 많이 읽는걸 방지
             line[content_len] = '\0';
-            printf("line: %s\n",line);
+            printf("line: %s\n", line);
             parseData(&(req->postData), line);
         }
     }
-    //잘못된 요청
     else
         return 1;
 
     return 0;
 }
 
-//저장된 파일 그대로 보내기
 int sendFile(char* path, SOCKET clientSocket)
 {
     char buffer[BUFSIZE];
@@ -220,12 +208,11 @@ int sendFile(char* path, SOCKET clientSocket)
     {
         int len = strlen(filepath);
         filepath[len] = '\\';
-        filepath[len+1] = '\0';
+        filepath[len + 1] = '\0';
     }
 
     strcat_s(filepath, sizeof(filepath), path);
 
-    //슬래시는 백슬래시로 변경
     for (int i = 0; i < strlen(filepath); ++i)
         if (filepath[i] == '/')
             filepath[i] = '\\';
@@ -234,7 +221,7 @@ int sendFile(char* path, SOCKET clientSocket)
     errno_t err;
     FILE* file;
     err = fopen_s(&file, filepath, "rb");
-    if(err != 0)
+    if (err != 0)
     {
         printf("The file %s was not opened\n", path);
         notFound(clientSocket);
@@ -242,16 +229,11 @@ int sendFile(char* path, SOCKET clientSocket)
     }
 
 
-    //파일 크기 확인
-    //int fseek(File* stream, long offset, int origin)
-    //파일 끝으로 이동
+
     fseek(file, 0, SEEK_END);
-    //파일 시작부터 현재 위치까지 바이트 수
     fileSize = ftell(file);
-    //다시 처음으로 이동
     fseek(file, 0, SEEK_SET);
 
-    //헤더 쓰기
     strcpy_s(buffer, sizeof(buffer), "HTTP/1.1 200 OK\r\n");
 
     addDate(buffer, sizeof(buffer));
@@ -260,7 +242,6 @@ int sendFile(char* path, SOCKET clientSocket)
     strcat_s(buffer, sizeof(buffer), "Connection: close\r\n\r\n");
     send(clientSocket, buffer, strlen(buffer), 0);
 
-    //4096바이트 씩 나누어 보내기
     int size = fread_s(buffer, sizeof(buffer), 1, 4096, file);
     while (size > 0)
     {
@@ -271,8 +252,7 @@ int sendFile(char* path, SOCKET clientSocket)
     return 0;
 }
 
-//템플릿 랜더링
-int render(char* filename, Dict *renderArgs,SOCKET clientSocket)
+int render(char* filename, Dict* renderArgs, SOCKET clientSocket)
 {
     char buffer[BUFSIZE];
     char* tempBuff = NULL;
@@ -280,7 +260,6 @@ int render(char* filename, Dict *renderArgs,SOCKET clientSocket)
     char filepath[200];
     int bufferSize = 0, fileSize = 0, renderSize = 0;
 
-    //랜더링에 사용할 인자가 없다면 파일을 그대로 보낸다.
     if (renderArgs == NULL)
     {
         strcpy_s(filepath, sizeof(filepath), "template\\");
@@ -288,7 +267,6 @@ int render(char* filename, Dict *renderArgs,SOCKET clientSocket)
         return sendFile(filepath, clientSocket);
     }
 
-    //템플릿 파일 읽기
     strcpy_s(filepath, sizeof(filepath), webroot);
     if (lastChr(filepath) != '\\')
     {
@@ -298,7 +276,7 @@ int render(char* filename, Dict *renderArgs,SOCKET clientSocket)
     }
     strcat_s(filepath, sizeof(filepath), "template\\");
     strcat_s(filepath, sizeof(filepath), filename);
-    
+
     errno_t err;
     FILE* file;
     err = fopen_s(&file, filepath, "rb");
@@ -309,14 +287,12 @@ int render(char* filename, Dict *renderArgs,SOCKET clientSocket)
         return -1;
     }
 
-
-    //템플릿 크기 확인
     fseek(file, 0, SEEK_END);
     fileSize = ftell(file);
     bufferSize = fileSize + 100;
     fseek(file, 0, SEEK_SET);
-    
-    //템플릿 읽기
+
+
     tempBuff = malloc(bufferSize);
     if (tempBuff == NULL)
     {
@@ -329,14 +305,12 @@ int render(char* filename, Dict *renderArgs,SOCKET clientSocket)
     if (fclose(file))
         printf("template file %s not closed\n", filename);
 
-    //템플릿 랜더링
     int i = 0, j, idx = 0;
     renderData[0].p = tempBuff;
     renderData[0].size = 0;
-    //${{key}} 를 찾고 value로 바꾸어 준다.
     while (i < fileSize)
     {
-        if (memcmp(&tempBuff[i], "${{", 3)==0)
+        if (memcmp(&tempBuff[i], "${{", 3) == 0)
         {
             i += 3;
             for (j = i; j < fileSize; ++j)
@@ -359,7 +333,7 @@ int render(char* filename, Dict *renderArgs,SOCKET clientSocket)
                     idx += 2;
                     renderData[idx].p = &tempBuff[j + 2];
                     renderData[idx].size = 0;
-                    i = j+2;
+                    i = j + 2;
                 }
             }
         }
@@ -373,7 +347,6 @@ int render(char* filename, Dict *renderArgs,SOCKET clientSocket)
     for (i = 0; i < idx; ++i)
         renderSize += renderData[i].size;
 
-    //헤더 쓰기
     strcpy_s(buffer, sizeof(buffer), "HTTP/1.1 200 OK\r\n");
 
     addDate(buffer, sizeof(buffer));
@@ -382,7 +355,6 @@ int render(char* filename, Dict *renderArgs,SOCKET clientSocket)
     strcat_s(buffer, sizeof(buffer), "Connection: close\r\n\r\n");
     send(clientSocket, buffer, strlen(buffer), 0);
 
-    //랜더링이 끝난 페이지 전송
     for (i = 0; i < idx; ++i)
         send(clientSocket, renderData[i].p, renderData[i].size, 0);
 
@@ -390,7 +362,6 @@ int render(char* filename, Dict *renderArgs,SOCKET clientSocket)
     return 0;
 }
 
-//없는 경로로 요청
 void notFound(SOCKET clientSocket)
 {
     char buffer[BUFSIZE];
@@ -409,8 +380,6 @@ void notFound(SOCKET clientSocket)
     send(clientSocket, buffer, strlen(buffer), 0);
 }
 
-//서버 에러 
-//템플릿 랜더링 실패시 보낸다
 void InternalError(SOCKET clientSocket)
 {
     char buffer[BUFSIZE];
@@ -429,14 +398,12 @@ void InternalError(SOCKET clientSocket)
     send(clientSocket, buffer, strlen(buffer), 0);
 }
 
-//요청을 제대로 읽었는지 테스트 용
-//메소드, URL 파라미터, 쿠키, POST data 등을 읽는다.
 void printRequest(HTTP_Request* req)
 {
     printf("method: %s\n", req->method == get ? "get" : "post");
     printf("path: %s\n", req->path);
     printf("version: %d.%d\n", req->ver1, req->ver2);
-    if(req->cookies.count >0)
+    if (req->cookies.count > 0)
     {
         printf("cookies\n");
         DictData* cur = req->cookies.first;
@@ -450,7 +417,7 @@ void printRequest(HTTP_Request* req)
     if (req->method == get && req->getData.count > 0)
     {
         printf("params\n");
-        DictData *cur = req->getData.first;
+        DictData* cur = req->getData.first;
         while (cur != NULL)
         {
             printf("\t%s: %s\n", cur->key, cur->value);
@@ -478,32 +445,27 @@ void printRequest(HTTP_Request* req)
     }
 }
 
-//딕셔너리에서 데이터 찾기
 DictData* findByKey(Dict* dict, char* key)
 {
     DictData* cur = dict->first;
-    //키가 같으면 리턴
     while (cur != NULL)
         if (strcmp(cur->key, key) == 0)
             return cur;
         else
             cur = cur->next;
 
-    //같은 키가 없으면 NULL
     return NULL;
 }
 
-//딕셔너리에 데이터 추가
 void addDict(Dict* dict, char* key, char* value)
 {
     DictData* newData = malloc(sizeof(DictData));
     strcpy_s(newData->key, sizeof(newData->key), key);
     strcpy_s(newData->value, sizeof(newData->value), value);
 
-    //데이터가 하나도 없는 경우
     if (dict->count == 0)
         dict->first = newData;
-    //last에 연결
+    //last�� ����
     else
         dict->last->next = newData;
 
@@ -512,8 +474,6 @@ void addDict(Dict* dict, char* key, char* value)
     dict->count += 1;
 }
 
-//딕셔너리 데이터 비우기
-//할당한 메모리 해제
 void clearDict(Dict* dict)
 {
     DictData* cur = dict->first;
@@ -525,7 +485,6 @@ void clearDict(Dict* dict)
     }
 }
 
-//요청 읽기에 사용한 메모리 해제
 void freeRequest(HTTP_Request* req)
 {
     clearDict(&req->getData);
@@ -534,7 +493,6 @@ void freeRequest(HTTP_Request* req)
     clearDict(&req->entities);
 }
 
-//응답 헤더에 날짜 추가
 void addDate(char* dest, int buf_size)
 {
     time_t t;
@@ -555,10 +513,9 @@ void addDate(char* dest, int buf_size)
     strcat_s(dest, buf_size, buffer2);
 }
 
-//응답헤더에 MiME 타입 추가
 void addMIME(char* buffer, int buf_size, char* path) {
-    
-    if(path == NULL)
+
+    if (path == NULL)
         strcat_s(buffer, buf_size, "Content-Type: text/html; charset=utf-8\r\n");
     else
     {
